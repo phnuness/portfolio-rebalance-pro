@@ -1,5 +1,8 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { Asset, AssetCategory, PortfolioConfig, CategoryAllocation, RebalanceRecommendation } from '@/types/portfolio';
+
+const STORAGE_KEY_CONFIG = 'portfolio-config';
+const STORAGE_KEY_ASSETS = 'portfolio-assets';
 
 const defaultConfig: PortfolioConfig = {
   monthlyIncome: 2000,
@@ -22,9 +25,36 @@ const defaultAssets: Asset[] = [
   { id: '4', ticker: 'MXRF11', name: 'Maxi Renda FII', category: 'fiis', quantity: 100, price: 10.06, targetAllocation: 100 },
 ];
 
+function loadFromStorage<T>(key: string, fallback: T): T {
+  try {
+    const stored = localStorage.getItem(key);
+    return stored ? JSON.parse(stored) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function saveToStorage<T>(key: string, value: T): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    console.error('Failed to save to localStorage:', error);
+  }
+}
+
 export function usePortfolio() {
-  const [config, setConfig] = useState<PortfolioConfig>(defaultConfig);
-  const [assets, setAssets] = useState<Asset[]>(defaultAssets);
+  const [config, setConfig] = useState<PortfolioConfig>(() => loadFromStorage(STORAGE_KEY_CONFIG, defaultConfig));
+  const [assets, setAssets] = useState<Asset[]>(() => loadFromStorage(STORAGE_KEY_ASSETS, defaultAssets));
+
+  // Persist config changes
+  useEffect(() => {
+    saveToStorage(STORAGE_KEY_CONFIG, config);
+  }, [config]);
+
+  // Persist assets changes
+  useEffect(() => {
+    saveToStorage(STORAGE_KEY_ASSETS, assets);
+  }, [assets]);
 
   const categoryLabels: Record<AssetCategory, string> = {
     acoes: 'Ações',
