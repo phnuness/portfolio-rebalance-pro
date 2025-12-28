@@ -43,18 +43,32 @@ function saveToStorage<T>(key: string, value: T): void {
 }
 
 export function usePortfolio() {
-  const [config, setConfig] = useState<PortfolioConfig>(() => loadFromStorage(STORAGE_KEY_CONFIG, defaultConfig));
-  const [assets, setAssets] = useState<Asset[]>(() => loadFromStorage(STORAGE_KEY_ASSETS, defaultAssets));
+  const [config, setConfig] = useState<PortfolioConfig>(defaultConfig);
+  const [assets, setAssets] = useState<Asset[]>(defaultAssets);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Persist config changes
+  // Load from storage on mount
   useEffect(() => {
-    saveToStorage(STORAGE_KEY_CONFIG, config);
-  }, [config]);
+    const storedConfig = loadFromStorage(STORAGE_KEY_CONFIG, defaultConfig);
+    const storedAssets = loadFromStorage(STORAGE_KEY_ASSETS, defaultAssets);
+    setConfig(storedConfig);
+    setAssets(storedAssets);
+    setIsInitialized(true);
+  }, []);
 
-  // Persist assets changes
+  // Persist config changes (skip initial load)
   useEffect(() => {
-    saveToStorage(STORAGE_KEY_ASSETS, assets);
-  }, [assets]);
+    if (isInitialized) {
+      saveToStorage(STORAGE_KEY_CONFIG, config);
+    }
+  }, [config, isInitialized]);
+
+  // Persist assets changes (skip initial load)
+  useEffect(() => {
+    if (isInitialized) {
+      saveToStorage(STORAGE_KEY_ASSETS, assets);
+    }
+  }, [assets, isInitialized]);
 
   const categoryLabels: Record<AssetCategory, string> = {
     acoes: 'Ações',
